@@ -15,8 +15,8 @@ Status: ✅ done · 🔄 in progress · ⏳ not started
 | 2 | Network: Retrofit/OkHttp → Ktor, DTOs, `AppError`, API config (BuildKonfig) | ✅ | `5e6221b` |
 | 3 | Data: Room KMP, DataStore, repositories, Paging | ✅ | `7f30c01` |
 | 4 | DI: Hilt → Koin | ✅ | `cd7e77e` |
-| 5 | Design system and resources: theme, colors, typography, `strings.xml` → Compose Resources | ✅ | |
-| 6 | UI: navigation, screens, shared widgets, adaptive layout | ⏳ | |
+| 5 | Design system and resources: theme, colors, typography, `strings.xml` → Compose Resources | ✅ | `52e3242` |
+| 6 | UI: navigation, screens, shared widgets, adaptive layout (3 parts, see notes) | 🔄 | |
 | 7 | Platform services: player, downloads (incl. `DownloadsRepository`), connectivity, share | ⏳ | |
 | 8 | Logging and monitoring: Timber → Kermit, Firebase Crashlytics and Analytics | ⏳ | |
 | 9 | Home screen widget: Glance (Android), WidgetKit (iOS) | ⏳ | |
@@ -66,6 +66,23 @@ The app's vector icons are in `composeResources/drawable`; vectors must use lite
 The Android launcher icon and window theme are in `androidApp`. The iOS app icon is still the empty placeholder.
 Dates: kotlinx-datetime has no locale-aware formatting, so the quota banner date ("Resets on Dec 25, 2026")
 needs a custom format or per-platform formatting (UI stage).
+
+**6. UI.** One Compose Multiplatform UI for both platforms (Material 3 on iOS too). Done in three parts:
+
+- 6.1 ✅ Shared widgets (`core/commonwidgets`) and UI helpers (`core/ui`). Platform pieces as expect/actual:
+  medium date format (`DateTimeFormatter` / `NSDateFormatter`), file size (`Formatter` / `NSByteCountFormatter`),
+  share sheet (`rememberLinkSharer`: chooser / `UIActivityViewController`), notification permission (Android 13+;
+  a pass-through on iOS). HTML descriptions use the HtmlConverter library on both platforms (Compose's
+  `fromHtml` is Android-only). Images: Coil 3 with the Ktor network fetcher. `SnackbarEvent` takes
+  `StringResource`s. `PlayerController`, `ConnectivityMonitor` and `DownloadsRepository` (now `localFilePath`)
+  moved as interfaces with stub implementations in `platformServicesModule` until stage 7.
+- 6.2 ⏳ Navigation, app shell (navigation bar / rail), Home, Filters, Search, Details with Koin ViewModels.
+- 6.3 ⏳ Favorites, Downloads, Settings, network banner, mini and full player.
+
+Known issue: Compose Resources picks plural rules by the device language even when only English strings exist,
+so on a Ukrainian device "161 episode" shows (Ukrainian "one" covers 21, 31, 161…). ProPodcastN on Android
+behaves the same (`getQuantityString` uses the device locale). Fix by adding translations or English-only plural
+logic; not decided yet.
 
 **7. Platform services** (common interface, separate implementation per platform):
 

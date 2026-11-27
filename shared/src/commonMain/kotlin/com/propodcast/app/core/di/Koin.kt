@@ -9,7 +9,7 @@ import org.koin.dsl.KoinAppDeclaration
 expect val platformModule: Module
 
 /** All app modules; tests swap [platformModule] for in-memory storage. */
-fun appModules(platform: Module = platformModule): List<Module> = listOf(platform, networkModule, dataModule)
+fun appModules(platform: Module = platformModule): List<Module> = listOf(platform, networkModule, dataModule, platformServicesModule)
 
 /** Starts Koin once per process: from `Application.onCreate` on Android, from the SwiftUI app on iOS. */
 fun initKoin(config: KoinAppDeclaration = {}): KoinApplication = startKoin {

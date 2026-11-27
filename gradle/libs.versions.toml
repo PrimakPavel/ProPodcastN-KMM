@@ -18,6 +18,8 @@ okio = "3.18.2"
 kermit = "2.2.0"
 koin = "4.2.2"
 materialIcons = "1.7.3"
+coil = "3.6.3"
+htmlConverter = "1.1.1"
 turbine = "1.2.1"
 robolectric = "4.18.1"
 androidxTestCore = "1.7.0"
@@ -64,6 +66,10 @@ koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
 compose-material-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "materialIcons" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
+html-converter = { module = "be.digitalia.compose.htmlconverter:htmlconverter", version.ref = "htmlConverter" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 [plugins]
