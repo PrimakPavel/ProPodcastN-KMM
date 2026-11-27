@@ -4,6 +4,7 @@
 .idea/
 build/
 /local.properties
+/gradle/gradle-daemon-jvm.properties
 /keystore.properties
 /keystore/
 *.jks
