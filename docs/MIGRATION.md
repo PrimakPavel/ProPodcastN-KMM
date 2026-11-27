@@ -16,8 +16,8 @@ Status: ✅ done · 🔄 in progress · ⏳ not started
 | 3 | Data: Room KMP, DataStore, repositories, Paging | ✅ | `7f30c01` |
 | 4 | DI: Hilt → Koin | ✅ | `cd7e77e` |
 | 5 | Design system and resources: theme, colors, typography, `strings.xml` → Compose Resources | ✅ | `52e3242` |
-| 6 | UI: navigation, screens, shared widgets, adaptive layout (3 parts, see notes) | ✅ | `b8bf2ff`, `ca3a743`, `092b1bf` |
-| 7 | Platform services: player, downloads (incl. `DownloadsRepository`), connectivity, share | ⏳ | |
+| 6 | UI: navigation, screens, shared widgets, adaptive layout (3 parts, see notes) | ✅ | `b8bf2ff`, `ca3a743`, `092b1bf`, `dde3311` |
+| 7 | Platform services: player, downloads (incl. `DownloadsRepository`), connectivity, share | ✅ | |
 | 8 | Logging and monitoring: Timber → Kermit, Firebase Crashlytics and Analytics | ⏳ | |
 | 9 | Home screen widget: Glance (Android), WidgetKit (iOS) | ⏳ | |
 | 10 | UI tests and a full feature check against ProPodcastN | ⏳ | |
@@ -84,7 +84,7 @@ needs a custom format or per-platform formatting (UI stage).
   `ExperimentalMaterial3Api`. Favorites and Settings tabs show a placeholder until 6.3; episodes go to the stub
   player. The iOS edge swipe goes back (Compose's `UIScreenEdgePanGestureRecognizer`).
   The temporary check screen and `platformName()` are gone: the app opens on Best podcasts.
-- 6.3 ✅ Favorites (with the Downloaded tab), Settings, the network strip, mini and full player; the shell is
+- 6.3 ✅ (`dde3311`) Favorites (with the Downloaded tab), Settings, the network strip, mini and full player; the shell is
   now the same as in ProPodcastN. Platform pieces: the full player's back handling uses Compose's
   `ui-backhandler` (Android back, iOS edge swipe); the seek bar uses the value-based `Slider` (JetBrains
   Material 3 1.9 has no state-based overload with `onValueChange`). Until stage 7 the player is a stub (no
@@ -96,7 +96,30 @@ so a Ukrainian device showed "161 episode" (Ukrainian "one" covers 21, 31, 161�
 same bug). No library fixes it; `englishPluralStringResource` applies English rules (1 → one, else other) to the
 same `<plurals>`. Use it instead of `pluralStringResource` until the strings are translated.
 
-**7. Platform services** (common interface, separate implementation per platform):
+**7. Platform services.** Interfaces in `commonMain`, implementations in `platformModule` per platform; the stubs
+are gone. Share moved in 6.1.
+
+- Connectivity: `AndroidConnectivityMonitor` (ported) and `IosConnectivityMonitor` on `NWPathMonitor`
+  (cellular and Low Data Mode count as metered).
+- Player: Media3 `MediaPlayerController` + `PlaybackService` ported to `androidMain` (Kermit instead of Timber;
+  the notification's −15/+30 labels come from Compose Resources; the session opens the app's launch intent).
+  iOS: `IosPlayerController` on AVPlayer with the playback audio session (spoken audio), `UIBackgroundModes`
+  audio, MPRemoteCommandCenter (play/pause, −15/+30, scrubbing) and MPNowPlayingInfoCenter (no artwork yet);
+  it saves the last episode and position and switches to a finished download like the Android player.
+- Downloads: WorkManager worker, file store, notifications and repository ported to `androidMain`; the worker
+  gets its dependencies from Koin (`KoinComponent`), so no custom WorkManager factory is needed. iOS:
+  `IosDownloadsRepository` on a background `NSURLSession` (downloads go on while the app is suspended; the
+  app delegate passes `handleEventsForBackgroundURLSession` to it; created at Koin start). Wi-Fi only: the
+  request disallows cellular and expensive networks. No progress notification on iOS.
+- Storage: episodes are persistent on both platforms, never in caches or tmp: Android `filesDir/episodes`
+  (excluded from Auto Backup / device transfer: it would exceed the 25 MB quota), iOS
+  `Application Support/episodes` (not purged by the system, excluded from iCloud backup).
+- Checked on devices: offline / back online strip (Android), streaming and pause on both, Android media session
+  with −15/+30 buttons, download with notification (Android) and a background download into place (iOS),
+  "continue listening" after restart on both. Not checked yet: the iOS offline strip (the simulator uses the
+  Mac's network), lock screen controls on iOS, delivery of downloads after iOS relaunches a closed app.
+
+Platform split:
 
 | Service | Android | iOS |
 |---|---|---|

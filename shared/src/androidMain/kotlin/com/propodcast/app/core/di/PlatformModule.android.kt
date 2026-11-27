@@ -1,5 +1,17 @@
 package com.propodcast.app.core.di
 
+import com.propodcast.app.core.connectivity.AndroidConnectivityMonitor
+import androidx.work.WorkManager
+import com.propodcast.app.core.connectivity.ConnectivityMonitor
+import com.propodcast.app.core.data.repository.DownloadsRepository
+import com.propodcast.app.core.download.DownloadNotifications
+import com.propodcast.app.core.download.EpisodeDownloadWorker
+import com.propodcast.app.core.download.EpisodeFileStore
+import com.propodcast.app.core.download.WorkManagerDownloadsRepository
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
+import com.propodcast.app.core.player.MediaPlayerController
+import com.propodcast.app.core.player.PlayerController
 import com.propodcast.app.core.data.DataStoreFiles
 import com.propodcast.app.core.data.createPreferencesDataStore
 import com.propodcast.app.core.data.dataStorePath
@@ -10,6 +22,26 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 actual val platformModule: Module = module {
+    single<ConnectivityMonitor> { AndroidConnectivityMonitor(androidContext()) }
+    single { WorkManager.getInstance(androidContext()) }
+    single { EpisodeFileStore(androidContext()) }
+    single { DownloadNotifications(androidContext()) }
+    // Audio hosts can be slow; follows redirects (Listen Notes audio links redirect to the host).
+    single(EpisodeDownloadWorker.DOWNLOAD_CLIENT) {
+        OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).build()
+    }
+    single<DownloadsRepository> {
+        WorkManagerDownloadsRepository(
+            dao = get(),
+            workManager = get(),
+            files = get(),
+            analytics = get(),
+            preferences = get(),
+        )
+    }
+    single<PlayerController> {
+        MediaPlayerController(androidContext(), preferences = get(), downloads = get(), analytics = get())
+    }
     single { buildDatabase(databaseBuilder(androidContext())) }
     single(DataStoreQualifiers.UserPreferences) {
         createPreferencesDataStore(dataStorePath(androidContext(), DataStoreFiles.USER_PREFERENCES))

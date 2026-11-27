@@ -2,6 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Keeps podcast audio playing with the screen locked or the app in background. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<!-- Required by Compose Multiplatform: lets it render at 120 Hz on ProMotion screens. -->
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>

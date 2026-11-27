@@ -77,6 +77,12 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             api(libs.koin.android)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.core.ktx)
+            implementation(libs.androidx.media3.exoplayer)
+            implementation(libs.androidx.media3.session)
+            implementation(libs.kotlinx.coroutines.guava)
+            implementation(libs.androidx.work.runtime)
+            implementation(libs.okhttp)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -93,6 +99,7 @@ kotlin {
             implementation(libs.junit)
             implementation(libs.robolectric)
             implementation(libs.androidx.test.core)
+            implementation(libs.androidx.work.testing)
         }
     }
 }
