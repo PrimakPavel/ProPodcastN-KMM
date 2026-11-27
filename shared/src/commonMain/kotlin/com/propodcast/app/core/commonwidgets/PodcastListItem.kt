@@ -33,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.propodcast.app.core.designsystem.theme.ProPodcastTheme
 import com.propodcast.app.core.ui.sharedPodcastArtwork
 import com.propodcast.app.core.model.Podcast
+import com.propodcast.app.core.ui.englishPluralStringResource
 
 /**
  * One podcast in a list: artwork, title, publisher, episode count,
@@ -85,7 +85,7 @@ fun PodcastListItem(
             }
             if (podcast.totalEpisodes > 0) {
                 Text(
-                    text = pluralStringResource(Res.plurals.episodes_count, podcast.totalEpisodes, podcast.totalEpisodes),
+                    text = englishPluralStringResource(Res.plurals.episodes_count, podcast.totalEpisodes, podcast.totalEpisodes),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
