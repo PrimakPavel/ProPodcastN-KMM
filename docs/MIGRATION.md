@@ -1,0 +1,101 @@
+# Migration plan: ProPodcastN → Kotlin Multiplatform
+
+The source app is [ProPodcastN](https://github.com/PrimakPavel/ProPodcastN) (Android, Jetpack Compose).
+We move it here stage by stage: each stage builds and runs on Android and iOS, and its tests pass on both
+before the next one starts.
+
+Status: ✅ done · 🔄 in progress · ⏳ not started
+
+## Stages
+
+| # | Stage | Status | Commit |
+|---|---|---|---|
+| 0 | Empty KMP project: `shared` (Compose Multiplatform), `androidApp`, `iosApp` | ✅ | `4c2f39c`, `4617704`, `8094071` |
+| 1 | `core/model` → `commonMain` | ✅ | `d22f381` |
+| 2 | Network: Retrofit/OkHttp → Ktor, DTOs, `AppError`, API config (BuildKonfig) | ✅ | |
+| 3 | Data: Room KMP, DataStore, repositories, Paging | ⏳ | |
+| 4 | DI: Hilt → Koin or Metro | ⏳ | |
+| 5 | Design system and resources: theme, colors, typography, `strings.xml` → Compose Resources | ⏳ | |
+| 6 | UI: navigation, screens, shared widgets, adaptive layout | ⏳ | |
+| 7 | Platform services: player, downloads, connectivity, share | ⏳ | |
+| 8 | Logging and monitoring: Timber → Kermit, Firebase Crashlytics and Analytics | ⏳ | |
+| 9 | Home screen widget: Glance (Android), WidgetKit (iOS) | ⏳ | |
+| 10 | UI tests and a full feature check against ProPodcastN | ⏳ | |
+
+### Stage notes
+
+**1. Model.** Same package `com.propodcast.app.core.model`. `java.time.Instant` → `kotlin.time.Instant`.
+Tests on `kotlin.test` in `commonTest`.
+
+**2. Network.** `ListenNotesApi` becomes a class over Ktor `HttpClient`. OkHttp interceptors become Ktor plugins
+(API key header, quota headers, logging). Engines: OkHttp on Android, Darwin on iOS. `MockWebServer` tests
+move to Ktor `MockEngine`. Base URL and API key come from `local.properties` through BuildKonfig
+(mock server by default, `LISTEN_NOTES_USE_PRODUCTION=true` for the real API). `AppError` maps Ktor
+`ResponseException` codes and `kotlinx.io.IOException`. The start screen shows a temporary list of best podcasts
+as a network check; it goes away with the UI stage. DI wiring (the old `NetworkModule`) waits for stage 4.
+
+**3. Data.** Room 2.8 with `BundledSQLiteDriver` and `@ConstructedBy`; database file path per platform.
+DataStore via `createWithPath` (okio). Paging 3 common and compose are multiplatform.
+
+**4. DI.** Hilt is Android-only. Choice to make: Koin (simple, runtime) or Metro (compile-time, closest to Hilt).
+
+**5. Resources.** Dates: kotlinx-datetime has no locale-aware formatting, so the quota banner date
+("Resets on Dec 25, 2026") needs a custom format or per-platform formatting.
+
+**7. Platform services** (common interface, separate implementation per platform):
+
+| Service | Android | iOS |
+|---|---|---|
+| Player | Media3 ExoPlayer + MediaSession | `AVPlayer`, `AVAudioSession`, `MPNowPlayingInfoCenter`, `MPRemoteCommandCenter` |
+| Downloads | WorkManager | background `URLSession`, `allowsCellularAccess = false` for Wi‑Fi only |
+| Connectivity | `ConnectivityManager` | `NWPathMonitor` |
+| Share | `Intent.ACTION_SEND` | `UIActivityViewController` |
+| Dynamic color | Material You | static palette |
+
+## Dependency map
+
+| ProPodcastN | KMP |
+|---|---|
+| Compose BOM (androidx) | Compose Multiplatform (`org.jetbrains.compose.*`) |
+| Navigation Compose | `org.jetbrains.androidx.navigation` |
+| Lifecycle / ViewModel | `org.jetbrains.androidx.lifecycle` |
+| Material 3 Adaptive Navigation Suite | `org.jetbrains.compose.material3.adaptive` |
+| Material Icons Core | vector drawables in `composeResources` |
+| `strings.xml` | Compose Resources (`Res.string.*`) |
+| Hilt, Hilt Navigation, Hilt Work | Koin or Metro |
+| Retrofit + converter | Ktor Client + ContentNegotiation |
+| OkHttp interceptors | Ktor plugins |
+| kotlinx.serialization | same |
+| Room | same (KMP) |
+| DataStore Preferences | same (KMP) |
+| Paging 3 | same (KMP) |
+| Coil 3 | same, `coil-network-ktor3` |
+| WorkManager | Android only; iOS background `URLSession` |
+| Media3 | Android only; iOS `AVPlayer` |
+| Glance | Android only; iOS WidgetKit |
+| Timber | Kermit |
+| Firebase Crashlytics / Analytics | GitLive Firebase SDK or native SDKs behind `AnalyticsTracker` |
+| `BuildConfig` | BuildKonfig |
+| `java.time` | `kotlin.time.Instant`, kotlinx-datetime |
+| `java.io.File` | okio / kotlinx-io |
+| JUnit 4 | `kotlin.test` |
+| MockWebServer | Ktor `MockEngine` |
+| Robolectric | stays in Android host tests only |
+
+## Conventions
+
+- Package names stay as in ProPodcastN (`com.propodcast.app.*`), so code moves without import changes.
+- Android application id is `com.propodcast.app` + `propodcast.applicationIdSuffix` from `gradle.properties`
+  (`.kmm`), so both apps install side by side. iOS bundle id: `com.propodcast.app.kmm`.
+- `local.properties`, keystores and `gradle/gradle-daemon-jvm.properties` stay out of git.
+- When a stage is finished, its status and commit go into the table above in the same change.
+
+## Commands
+
+```bash
+./gradlew :androidApp:installDebug
+./gradlew :shared:testAndroidHostTest
+./gradlew :shared:iosSimulatorArm64Test
+```
+
+iOS app: open `iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` scheme.

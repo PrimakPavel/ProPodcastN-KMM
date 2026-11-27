@@ -1,7 +1,7 @@
 # ProPodcast KMM
 
 Kotlin Multiplatform port of [ProPodcastN](https://github.com/PrimakPavel/ProPodcastN): one Compose Multiplatform
-UI for Android and iOS. Work in progress, migrated step by step.
+UI for Android and iOS. Work in progress, migrated step by step: see the [migration plan](docs/MIGRATION.md).
 
 ## Structure
 
