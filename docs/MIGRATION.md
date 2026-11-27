@@ -88,6 +88,10 @@ needs a custom format or per-platform formatting (UI stage).
   `ExperimentalMaterial3Api`. Favorites and Settings tabs show a placeholder until 6.3; episodes go to the stub
   player. The iOS edge swipe goes back (Compose's `UIScreenEdgePanGestureRecognizer`).
   The temporary check screen and `platformName()` are gone: the app opens on Best podcasts.
+  Tabs and back differ per platform (`navigateToTab`, `tabsReturnToStartOnBack`): on Android, back from any tab
+  returns to Best (system back, as in ProPodcastN); on iOS each tab is its own stack, as in UITabBarController:
+  switching tabs saves the current tab and makes the new one the root, so a tab's root has no back, and
+  `TabRootBackHandler` takes the edge swipe there (otherwise it reached the list and opened or swiped away a row).
 - 6.3 ✅ (`dde3311`) Favorites (with the Downloaded tab), Settings, the network strip, mini and full player; the shell is
   now the same as in ProPodcastN. Platform pieces: the full player's back handling uses Compose's
   `ui-backhandler` (Android back, iOS edge swipe); the seek bar uses the value-based `Slider` (JetBrains

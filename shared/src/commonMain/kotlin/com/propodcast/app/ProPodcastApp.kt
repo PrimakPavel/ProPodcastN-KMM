@@ -33,7 +33,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -50,6 +49,8 @@ import com.propodcast.app.feature.player.MiniPlayer
 import com.propodcast.app.feature.player.PlayerViewModel
 import com.propodcast.app.navigation.AppNavHost
 import com.propodcast.app.navigation.TopLevelDestination
+import com.propodcast.app.navigation.TabRootBackHandler
+import com.propodcast.app.navigation.navigateToTab
 
 /** Root composable: adaptive navigation (bottom bar on phones, rail on wider screens), nav host and player. */
 @Composable
@@ -75,6 +76,7 @@ fun ProPodcastApp(
     backStackEntry?.destination?.topLevelDestination()?.let { selectedTab = it }
     val screenName = backStackEntry?.destination?.route?.substringBefore('?')?.substringBefore('/')?.substringAfterLast('.')
     LaunchedEffect(backStackEntry?.id) { screenName?.let(onScreenView) }
+    TabRootBackHandler(backStackEntry, hasPreviousEntry = backStackEntry != null && navController.previousBackStackEntry != null)
 
     // One layout for the app and the full player, so the artwork can fly between mini and full player.
     SharedTransitionLayout(modifier) {
@@ -150,10 +152,6 @@ private fun NavDestination.topLevelDestination(): TopLevelDestination? =
  * opened on top of it (e.g. podcast details) is dropped, also when the tab is tapped again while deep inside.
  */
 private fun NavHostController.navigateToTopLevel(destination: TopLevelDestination) {
-    navigate(destination.route) {
-        popUpTo(graph.findStartDestination().id) { saveState = true }
-        launchSingleTop = true
-        restoreState = true
-    }
+    navigateToTab(destination.route)
     popBackStack(destination.routeClass, inclusive = false)
 }

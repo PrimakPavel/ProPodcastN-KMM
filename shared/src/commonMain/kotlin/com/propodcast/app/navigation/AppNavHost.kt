@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -39,10 +38,10 @@ fun AppNavHost(
                     onOpenSettings = { navController.navigate(SettingsRoute) },
                     onOpenDownloads = {
                         // Like the bottom bar's Favorites, but straight to the Downloaded tab.
-                        navController.navigate(FavoritesRoute(initialTab = FavoritesTab.DOWNLOADS.name)) {
-                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                        }
+                        navController.navigateToTab(
+                            FavoritesRoute(initialTab = FavoritesTab.DOWNLOADS.name),
+                            restoreState = false,
+                        )
                     },
                 )
             }
