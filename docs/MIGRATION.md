@@ -14,8 +14,8 @@ Status: ✅ done · 🔄 in progress · ⏳ not started
 | 1 | `core/model` → `commonMain` | ✅ | `d22f381` |
 | 2 | Network: Retrofit/OkHttp → Ktor, DTOs, `AppError`, API config (BuildKonfig) | ✅ | `5e6221b` |
 | 3 | Data: Room KMP, DataStore, repositories, Paging | ✅ | `7f30c01` |
-| 4 | DI: Hilt → Koin | ✅ | |
-| 5 | Design system and resources: theme, colors, typography, `strings.xml` → Compose Resources | ⏳ | |
+| 4 | DI: Hilt → Koin | ✅ | `cd7e77e` |
+| 5 | Design system and resources: theme, colors, typography, `strings.xml` → Compose Resources | ✅ | |
 | 6 | UI: navigation, screens, shared widgets, adaptive layout | ⏳ | |
 | 7 | Platform services: player, downloads (incl. `DownloadsRepository`), connectivity, share | ⏳ | |
 | 8 | Logging and monitoring: Timber → Kermit, Firebase Crashlytics and Analytics | ⏳ | |
@@ -53,8 +53,19 @@ dependencies with `koinInject()`; ViewModels (`koin-compose-viewmodel`) come wit
 `KoinModulesTest` resolves the whole graph with in-memory storage on both platforms.
 Player, downloads and connectivity modules come with stage 7, Firebase analytics with stage 8.
 
-**5. Resources.** Dates: kotlinx-datetime has no locale-aware formatting, so the quota banner date
-("Resets on Dec 25, 2026") needs a custom format or per-platform formatting.
+**5. Design system and resources.** Theme, colors, typography and the animated color change moved to
+`core/designsystem/theme`; Material You (`dynamicColorScheme`) is Android 12+ only, iOS uses the app palette.
+The theme follows the Settings value (`ThemeMode`) as in ProPodcastN's `MainActivity`; `SystemAppearanceEffect`
+makes system chrome follow it (bar icons via `enableEdgeToEdge` on Android, the window's
+`overrideUserInterfaceStyle` on iOS, which also fixes the status bar text color).
+All strings, plurals included, are in `composeResources/values/strings.xml` (`Res.string.*`, `Res.plurals.*`).
+Compose Resources only formats indexed arguments, so `%d` became `%1$d` and `%%` became `%`.
+The app's vector icons are in `composeResources/drawable`; vectors must use literal colors
+(`@android:color/white` crashed the parser). Material icons stay on `material-icons-core` 1.7.3 from JetBrains
+(no longer updated, but has iOS builds); replacing them with vectors can come later.
+The Android launcher icon and window theme are in `androidApp`. The iOS app icon is still the empty placeholder.
+Dates: kotlinx-datetime has no locale-aware formatting, so the quota banner date ("Resets on Dec 25, 2026")
+needs a custom format or per-platform formatting (UI stage).
 
 **7. Platform services** (common interface, separate implementation per platform):
 
@@ -74,7 +85,7 @@ Player, downloads and connectivity modules come with stage 7, Firebase analytics
 | Navigation Compose | `org.jetbrains.androidx.navigation` |
 | Lifecycle / ViewModel | `org.jetbrains.androidx.lifecycle` |
 | Material 3 Adaptive Navigation Suite | `org.jetbrains.compose.material3.adaptive` |
-| Material Icons Core | vector drawables in `composeResources` |
+| Material Icons Core | JetBrains `material-icons-core` 1.7.3 (app icons as vectors in `composeResources`) |
 | `strings.xml` | Compose Resources (`Res.string.*`) |
 | Hilt, Hilt Navigation, Hilt Work | Koin |
 | Retrofit + converter | Ktor Client + ContentNegotiation |

@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,11 +37,49 @@ import com.propodcast.app.core.network.ListenNotesApi
 import com.propodcast.app.resources.Res
 import com.propodcast.app.resources.app_name
 import com.propodcast.app.resources.greeting
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.propodcast.app.core.data.repository.UserPreferencesRepository
+import com.propodcast.app.core.designsystem.theme.ProPodcastTheme
+import com.propodcast.app.core.model.ThemeMode
+import com.propodcast.app.core.ui.SystemAppearanceEffect
+import com.propodcast.app.resources.download_state_downloading
+import com.propodcast.app.resources.episodes_count
+import com.propodcast.app.resources.ic_download
+import com.propodcast.app.resources.ic_download_done
+import com.propodcast.app.resources.ic_filter_list
+import com.propodcast.app.resources.ic_forward
+import com.propodcast.app.resources.ic_pause
+import com.propodcast.app.resources.ic_play
+import com.propodcast.app.resources.ic_replay
+import com.propodcast.app.resources.settings_theme_dark
+import com.propodcast.app.resources.settings_theme_light
+import com.propodcast.app.resources.settings_theme_system
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun App() {
-    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
+    val preferences: UserPreferencesRepository = koinInject()
+    // Null until DataStore answers (a few ms): drawing nothing avoids a flash of the wrong theme.
+    val themeMode by preferences.themeMode.collectAsStateWithLifecycle(initialValue = null)
+    val mode = themeMode ?: return
+    val darkTheme = when (mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    SystemAppearanceEffect(mode, darkTheme)
+    val scope = rememberCoroutineScope()
+    ProPodcastTheme(darkTheme = darkTheme) {
         Surface(Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier.safeDrawingPadding().padding(24.dp),
@@ -54,9 +90,50 @@ fun App() {
                 Text(stringResource(Res.string.greeting, platformName()), style = MaterialTheme.typography.bodyLarge)
                 Spacer(Modifier.height(24.dp))
                 StorageCheck()
+                Spacer(Modifier.height(24.dp))
+                ResourcesCheck(mode, onModeChange = { scope.launch { preferences.setThemeMode(it) } })
             }
         }
     }
+}
+
+/** Temporary check of the design system stage: theme switch, drawables, Material icons, plurals, formats. */
+@Composable
+private fun ResourcesCheck(mode: ThemeMode, onModeChange: (ThemeMode) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ThemeMode.entries.forEach { entry ->
+            FilterChip(
+                selected = entry == mode,
+                onClick = { onModeChange(entry) },
+                label = {
+                    Text(
+                        stringResource(
+                            when (entry) {
+                                ThemeMode.SYSTEM -> Res.string.settings_theme_system
+                                ThemeMode.LIGHT -> Res.string.settings_theme_light
+                                ThemeMode.DARK -> Res.string.settings_theme_dark
+                            },
+                        ),
+                    )
+                },
+            )
+        }
+    }
+    Spacer(Modifier.height(12.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        listOf(Res.drawable.ic_play, Res.drawable.ic_pause, Res.drawable.ic_replay, Res.drawable.ic_forward,
+            Res.drawable.ic_download, Res.drawable.ic_download_done, Res.drawable.ic_filter_list)
+            .forEach { Icon(painterResource(it), contentDescription = null) }
+        Icon(Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Icon(Icons.Filled.Search, contentDescription = null)
+    }
+    Spacer(Modifier.height(12.dp))
+    Text(
+        pluralStringResource(Res.plurals.episodes_count, 1, 1) + " · " +
+            pluralStringResource(Res.plurals.episodes_count, 12, 12) + " · " +
+            stringResource(Res.string.download_state_downloading, 42),
+        style = MaterialTheme.typography.bodyMedium,
+    )
 }
 
 /**
