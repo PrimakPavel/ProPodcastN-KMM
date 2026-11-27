@@ -12,12 +12,12 @@ Status: ✅ done · 🔄 in progress · ⏳ not started
 |---|---|---|---|
 | 0 | Empty KMP project: `shared` (Compose Multiplatform), `androidApp`, `iosApp` | ✅ | `4c2f39c`, `4617704`, `8094071` |
 | 1 | `core/model` → `commonMain` | ✅ | `d22f381` |
-| 2 | Network: Retrofit/OkHttp → Ktor, DTOs, `AppError`, API config (BuildKonfig) | ✅ | |
-| 3 | Data: Room KMP, DataStore, repositories, Paging | ⏳ | |
+| 2 | Network: Retrofit/OkHttp → Ktor, DTOs, `AppError`, API config (BuildKonfig) | ✅ | `5e6221b` |
+| 3 | Data: Room KMP, DataStore, repositories, Paging | ✅ | |
 | 4 | DI: Hilt → Koin or Metro | ⏳ | |
 | 5 | Design system and resources: theme, colors, typography, `strings.xml` → Compose Resources | ⏳ | |
 | 6 | UI: navigation, screens, shared widgets, adaptive layout | ⏳ | |
-| 7 | Platform services: player, downloads, connectivity, share | ⏳ | |
+| 7 | Platform services: player, downloads (incl. `DownloadsRepository`), connectivity, share | ⏳ | |
 | 8 | Logging and monitoring: Timber → Kermit, Firebase Crashlytics and Analytics | ⏳ | |
 | 9 | Home screen widget: Glance (Android), WidgetKit (iOS) | ⏳ | |
 | 10 | UI tests and a full feature check against ProPodcastN | ⏳ | |
@@ -34,10 +34,20 @@ move to Ktor `MockEngine`. Base URL and API key come from `local.properties` thr
 `ResponseException` codes and `kotlinx.io.IOException`. The start screen shows a temporary list of best podcasts
 as a network check; it goes away with the UI stage. DI wiring (the old `NetworkModule`) waits for stage 4.
 
-**3. Data.** Room 2.8 with `BundledSQLiteDriver` and `@ConstructedBy`; database file path per platform.
-DataStore via `createWithPath` (okio). Paging 3 common and compose are multiplatform.
+**3. Data.** Room 2.8 with `BundledSQLiteDriver` and `@ConstructedBy` on both platforms; KSP generates Room code
+per target; schemas (and the 1 → 2 auto-migration) live in `shared/schemas`. Database and DataStore files:
+Android uses the usual app folders, iOS uses Documents. DataStore via `createWithPath` (okio).
+Repositories (podcasts, favorites, preferences, API quota), the reference data cache and the paging sources moved
+without Hilt annotations; `java.time.Clock` → `kotlin.time.Clock`, Timber → Kermit, `ConcurrentHashMap` → atomic
+compare-and-set. The analytics interface and events moved too (Firebase stays for stage 8).
+`DownloadsRepository` is tied to WorkManager and files, so it moves with downloads in stage 7.
+Tests: Room tests extend `DatabaseTest`, which runs them under Robolectric on the Android host (framework SQLite)
+and as plain tests on iOS (bundled SQLite). `AppStorage` holds the database and DataStores until DI (stage 4);
+the start screen shows a temporary storage check.
 
 **4. DI.** Hilt is Android-only. Choice to make: Koin (simple, runtime) or Metro (compile-time, closest to Hilt).
+Replaces `AppStorage`, the hand-made clients in `App.kt` and the old `NetworkModule` / `DatabaseModule` /
+`DataStoreModule`.
 
 **5. Resources.** Dates: kotlinx-datetime has no locale-aware formatting, so the quota banner date
 ("Resets on Dec 25, 2026") needs a custom format or per-platform formatting.
@@ -73,7 +83,7 @@ DataStore via `createWithPath` (okio). Paging 3 common and compose are multiplat
 | WorkManager | Android only; iOS background `URLSession` |
 | Media3 | Android only; iOS `AVPlayer` |
 | Glance | Android only; iOS WidgetKit |
-| Timber | Kermit |
+| Timber | Kermit (added in stage 3) |
 | Firebase Crashlytics / Analytics | GitLive Firebase SDK or native SDKs behind `AnalyticsTracker` |
 | `BuildConfig` | BuildKonfig |
 | `java.time` | `kotlin.time.Instant`, kotlinx-datetime |

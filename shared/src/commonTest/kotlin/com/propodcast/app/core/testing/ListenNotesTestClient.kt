@@ -44,6 +44,11 @@ class ListenNotesTestClient(apiKey: String = "") {
 
     val requests: List<HttpRequestData> get() = engine.requestHistory
 
+    private var taken = 0
+
+    /** Requests in the order they were sent, one per call (like MockWebServer.takeRequest). */
+    fun takeRequest(): HttpRequestData = requests[taken++]
+
     fun enqueueFixture(name: String) = enqueue(200, fixture(name))
 
     fun enqueue(code: Int, body: String = "{}", vararg headers: Pair<String, String>) {

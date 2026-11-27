@@ -9,6 +9,8 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.buildkonfig)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
 }
 
 kotlin {
@@ -18,7 +20,7 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
         androidResources { enable = true }
         // JVM unit tests for the Android target (commonTest runs there too).
-        withHostTest {}
+        withHostTest { isIncludeAndroidResources = true }
     }
 
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
@@ -44,6 +46,12 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktor.client.logging)
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
+            implementation(libs.androidx.datastore.preferences.core)
+            implementation(libs.androidx.paging.common)
+            implementation(libs.okio)
+            implementation(libs.kermit)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
@@ -55,8 +63,24 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.ktor.client.mock)
+            implementation(libs.androidx.paging.testing)
+            implementation(libs.turbine)
+        }
+        getByName("androidHostTest").dependencies {
+            implementation(libs.junit)
+            implementation(libs.robolectric)
+            implementation(libs.androidx.test.core)
         }
     }
+}
+
+dependencies {
+    // Room code generation for every target.
+    listOf("kspAndroid", "kspIosArm64", "kspIosSimulatorArm64").forEach { add(it, libs.androidx.room.compiler) }
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 compose.resources {
