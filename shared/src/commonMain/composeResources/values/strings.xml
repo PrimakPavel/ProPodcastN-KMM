@@ -135,6 +135,4 @@
     <string name="settings_wifi_only">Download only on Wi-Fi</string>
     <string name="settings_wifi_only_summary">On mobile data, downloads wait until you are on Wi-Fi.</string>
     <string name="download_waiting_wifi">Will download on Wi-Fi</string>
-    <!-- Temporary start screen (until the UI stage). -->
-    <string name="greeting">Hello from %1$s</string>
 </resources>

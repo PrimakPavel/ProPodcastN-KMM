@@ -14,6 +14,12 @@ plugins {
 }
 
 kotlin {
+    compilerOptions {
+        // TopAppBar and friends are stable in androidx Material 3 1.5 (ProPodcastN), still experimental in
+        // JetBrains Material 3 1.9.
+        optIn.add("androidx.compose.material3.ExperimentalMaterial3Api")
+    }
+
     android {
         namespace = "com.propodcast.app.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -59,6 +65,12 @@ kotlin {
             implementation(libs.kermit)
             api(libs.koin.core)
             implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
+            implementation(libs.androidx.navigation.compose)
+            implementation(libs.androidx.lifecycle.viewmodel.savedstate)
+            implementation(libs.compose.material3.adaptive)
+            implementation(libs.compose.material3.adaptive.navigation.suite)
+            implementation(libs.androidx.window.core)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)

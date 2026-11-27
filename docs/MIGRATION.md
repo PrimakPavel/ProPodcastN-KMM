@@ -69,20 +69,27 @@ needs a custom format or per-platform formatting (UI stage).
 
 **6. UI.** One Compose Multiplatform UI for both platforms (Material 3 on iOS too). Done in three parts:
 
-- 6.1 ✅ Shared widgets (`core/commonwidgets`) and UI helpers (`core/ui`). Platform pieces as expect/actual:
+- 6.1 ✅ (`b8bf2ff`) Shared widgets (`core/commonwidgets`) and UI helpers (`core/ui`). Platform pieces as expect/actual:
   medium date format (`DateTimeFormatter` / `NSDateFormatter`), file size (`Formatter` / `NSByteCountFormatter`),
   share sheet (`rememberLinkSharer`: chooser / `UIActivityViewController`), notification permission (Android 13+;
   a pass-through on iOS). HTML descriptions use the HtmlConverter library on both platforms (Compose's
   `fromHtml` is Android-only). Images: Coil 3 with the Ktor network fetcher. `SnackbarEvent` takes
   `StringResource`s. `PlayerController`, `ConnectivityMonitor` and `DownloadsRepository` (now `localFilePath`)
   moved as interfaces with stub implementations in `platformServicesModule` until stage 7.
-- 6.2 ⏳ Navigation, app shell (navigation bar / rail), Home, Filters, Search, Details with Koin ViewModels.
+- 6.2 ✅ Navigation (JetBrains `navigation-compose`, type-safe routes as before), the app shell
+  (`NavigationSuiteScaffold`: bottom bar on phones, rail on tablets and in phone landscape, from JetBrains
+  Material 3 adaptive), Home, Filters, Search, Details and the download actions (`feature/downloads`, on the stub
+  repository). ViewModels come from Koin (`featureModule`, `koinViewModel()`; `SavedStateHandle` from the
+  navigation entry). JetBrains Material 3 1.9 still marks `TopAppBar` experimental, so `shared` opts in to
+  `ExperimentalMaterial3Api`. Favorites and Settings tabs show a placeholder until 6.3; episodes go to the stub
+  player. The iOS edge swipe goes back (Compose's `UIScreenEdgePanGestureRecognizer`).
+  The temporary check screen and `platformName()` are gone: the app opens on Best podcasts.
 - 6.3 ⏳ Favorites, Downloads, Settings, network banner, mini and full player.
 
-Known issue: Compose Resources picks plural rules by the device language even when only English strings exist,
-so on a Ukrainian device "161 episode" shows (Ukrainian "one" covers 21, 31, 161…). ProPodcastN on Android
-behaves the same (`getQuantityString` uses the device locale). Fix by adding translations or English-only plural
-logic; not decided yet.
+Plurals: Compose Resources picks plural rules by the device language even when only English strings exist,
+so a Ukrainian device showed "161 episode" (Ukrainian "one" covers 21, 31, 161…; ProPodcastN on Android has the
+same bug). No library fixes it; `englishPluralStringResource` applies English rules (1 → one, else other) to the
+same `<plurals>`. Use it instead of `pluralStringResource` until the strings are translated.
 
 **7. Platform services** (common interface, separate implementation per platform):
 

@@ -20,6 +20,10 @@ koin = "4.2.2"
 materialIcons = "1.7.3"
 coil = "3.6.3"
 htmlConverter = "1.1.1"
+navigationCompose = "2.10.0"
+material3Adaptive = "1.3.0"
+material3AdaptiveNavigationSuite = "1.9.0"
+windowCore = "1.5.1"
 turbine = "1.2.1"
 robolectric = "4.18.1"
 androidxTestCore = "1.7.0"
@@ -70,6 +74,12 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" 
 coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
 html-converter = { module = "be.digitalia.compose.htmlconverter:htmlconverter", version.ref = "htmlConverter" }
+androidx-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+compose-material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "material3Adaptive" }
+compose-material3-adaptive-navigation-suite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version.ref = "material3AdaptiveNavigationSuite" }
+androidx-window-core = { module = "org.jetbrains.androidx.window:window-core", version.ref = "windowCore" }
+androidx-lifecycle-viewmodel-savedstate = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "androidxLifecycle" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 [plugins]
