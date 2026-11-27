@@ -55,6 +55,7 @@ class IosDownloadsRepository(
     private val dao: DownloadedEpisodeDao,
     private val analytics: AnalyticsTracker,
     private val preferences: UserPreferencesRepository,
+    private val progressPresenter: DownloadProgressPresenter? = null,
     private val clock: Clock = Clock.System,
 ) : DownloadsRepository {
 
@@ -63,7 +64,7 @@ class IosDownloadsRepository(
     private val files = IosEpisodeFileStore()
 
     /** Progress of running downloads, by episode. */
-    private val progress = MutableStateFlow<Map<String, Float>>(emptyMap())
+    private val progress = MutableStateFlow<Map<String, Float?>>(emptyMap())
 
     private val delegate = Delegate()
     private val session: NSURLSession = NSURLSession.sessionWithConfiguration(
@@ -76,6 +77,9 @@ class IosDownloadsRepository(
     )
 
     init {
+        progressPresenter?.let { presenter ->
+            scope.presentDownloadProgress(progress, presenter) { id -> dao.get(id)?.title }
+        }
         scope.launch {
             // Removals whose Undo window was cut short by the app being closed.
             dao.pendingDeleteIds().forEach { deleteNow(it) }
@@ -95,6 +99,8 @@ class IosDownloadsRepository(
         val entity = episode.toDownloadEntity(addedAt = clock.now().toEpochMilliseconds()) ?: return
         cancelTask(episode.id)
         dao.upsert(entity)
+        // Listed as running right away (size unknown), so its Live Activity starts while the app is in front.
+        progress.update { it + (episode.id to null) }
         start(episode.id, entity.audioUrl, wifiOnly = preferences.downloadOnlyOnWifi.first())
         analytics.logEvent(AnalyticsEvents.DOWNLOAD_EPISODE)
     }
@@ -162,6 +168,9 @@ class IosDownloadsRepository(
 
     private inner class Delegate : NSObject(), NSURLSessionDownloadDelegateProtocol {
 
+        /** Tasks that already reported progress (main queue only). */
+        private val reportingTasks = mutableSetOf<ULong>()
+
         override fun URLSession(
             session: NSURLSession,
             downloadTask: NSURLSessionDownloadTask,
@@ -170,11 +179,13 @@ class IosDownloadsRepository(
             totalBytesExpectedToWrite: Long,
         ) {
             val episodeId = downloadTask.taskDescription ?: return
-            val firstReport = episodeId !in progress.value
+            // The first bytes of this task: queued → downloading.
+            val firstReport = downloadTask.taskIdentifier !in reportingTasks
+            if (firstReport) reportingTasks += downloadTask.taskIdentifier
             if (totalBytesExpectedToWrite > 0) {
                 progress.update { it + (episodeId to (totalBytesWritten.toFloat() / totalBytesExpectedToWrite).coerceIn(0f, 1f)) }
-            } else if (firstReport) {
-                progress.update { it + (episodeId to 0f) }
+            } else if (episodeId !in progress.value) {
+                progress.update { it + (episodeId to null) }
             }
             if (firstReport) scope.launch { dao.updateStatus(episodeId, DownloadStatus.DOWNLOADING) }
         }

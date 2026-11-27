@@ -53,7 +53,18 @@ import platform.Foundation.NSOperationQueue
 import platform.Foundation.NSURL
 import platform.Foundation.NSURLErrorDomain
 import platform.MediaPlayer.MPChangePlaybackPositionCommandEvent
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.statement.readRawBytes
+import io.ktor.http.isSuccess
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
+import platform.Foundation.NSData
+import platform.Foundation.create
+import platform.MediaPlayer.MPMediaItemArtwork
 import platform.MediaPlayer.MPMediaItemPropertyArtist
+import platform.MediaPlayer.MPMediaItemPropertyArtwork
+import platform.UIKit.UIImage
 import platform.MediaPlayer.MPMediaItemPropertyPlaybackDuration
 import platform.MediaPlayer.MPMediaItemPropertyTitle
 import platform.MediaPlayer.MPNowPlayingInfoCenter
@@ -320,13 +331,39 @@ class IosPlayerController(
         val key = listOf(item.episodeId, playing, durationMs(), speed)
         if (!force && key == lastNowPlayingKey) return
         lastNowPlayingKey = key
-        MPNowPlayingInfoCenter.defaultCenter().nowPlayingInfo = mapOf<Any?, Any?>(
-            MPMediaItemPropertyTitle to item.title,
-            MPMediaItemPropertyArtist to item.podcastTitle,
-            MPMediaItemPropertyPlaybackDuration to durationMs() / 1_000.0,
-            MPNowPlayingInfoPropertyElapsedPlaybackTime to positionMs / 1_000.0,
-            MPNowPlayingInfoPropertyPlaybackRate to if (playing) speed.toDouble() else 0.0,
-        )
+        MPNowPlayingInfoCenter.defaultCenter().nowPlayingInfo = buildMap<Any?, Any?> {
+            put(MPMediaItemPropertyTitle, item.title)
+            put(MPMediaItemPropertyArtist, item.podcastTitle)
+            put(MPMediaItemPropertyPlaybackDuration, durationMs() / 1_000.0)
+            put(MPNowPlayingInfoPropertyElapsedPlaybackTime, positionMs / 1_000.0)
+            put(MPNowPlayingInfoPropertyPlaybackRate, if (playing) speed.toDouble() else 0.0)
+            artwork?.takeIf { it.first == item.imageUrl }?.let { put(MPMediaItemPropertyArtwork, it.second) }
+        }
+        loadArtwork(item)
+    }
+
+    /** The episode's artwork for the lock screen, as (image url, artwork); loaded once per url. */
+    private var artwork: Pair<String, MPMediaItemArtwork>? = null
+    private var artworkLoading: String? = null
+    private val artworkClient by lazy { HttpClient() }
+
+    private fun loadArtwork(item: NowPlaying) {
+        val url = item.imageUrl ?: return
+        if (artwork?.first == url || artworkLoading == url) return
+        artworkLoading = url
+        scope.launch {
+            val image = try {
+                val bytes = artworkClient.get(url).takeIf { it.status.isSuccess() }?.readRawBytes()
+                bytes?.let { data -> data.usePinned { UIImage(data = NSData.create(bytes = it.addressOf(0), length = data.size.toULong())) } }
+            } catch (e: Exception) {
+                log.w(e) { "Could not load the lock screen artwork" }
+                null
+            }
+            if (artworkLoading == url) artworkLoading = null
+            if (image == null || current?.imageUrl != url) return@launch
+            artwork = url to MPMediaItemArtwork(boundsSize = image.size) { _ -> image }
+            updateNowPlayingInfo(force = true)
+        }
     }
 
     /** Podcasts: -15 s / +30 s around play/pause instead of previous / next track, plus scrubbing. */

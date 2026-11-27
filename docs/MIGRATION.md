@@ -19,8 +19,8 @@ Status: ✅ done · 🔄 in progress · ⏳ not started
 | 6 | UI: navigation, screens, shared widgets, adaptive layout (3 parts, see notes) | ✅ | `b8bf2ff`, `ca3a743`, `092b1bf`, `dde3311` |
 | 7 | Platform services: player, downloads (incl. `DownloadsRepository`), connectivity, share | ✅ | `dfb01bf` |
 | 8 | Logging and monitoring: Timber → Kermit, Firebase Crashlytics and Analytics | ✅ | `8d6cc3a` |
-| 9 | Home screen widget: Glance (Android), WidgetKit (iOS) | ✅ | |
-| 10 | UI tests and a full feature check against ProPodcastN | ⏳ | |
+| 9 | Home screen widget: Glance (Android), WidgetKit (iOS) | ✅ | `f9b37ba` |
+| 10 | UI tests and a full feature check against ProPodcastN | 🔄 | |
 
 ### Stage notes
 
@@ -133,6 +133,37 @@ Firebase project `propodcast-34ca9`, apps `com.propodcast.app.kmm(.debug)` (Andr
   and the widget follows. On a device, the App Group needs to be registered for both bundle ids in the Apple
   developer account (the simulator does not check).
 
+**10. UI tests and feature check.**
+- The Compose UI tests of ProPodcastN (`androidTest`, 9 classes) moved to `commonTest` on Compose Multiplatform's
+  `runComposeUiTest`, so the same tests run on the Android host (Robolectric, through `UiTestBase`) and on the iOS
+  simulator, without a device. They compile on both; not run yet (they run only when asked).
+- The Room migration test (1 → 2) runs on iOS with Room's multiplatform `MigrationTestHelper` and the bundled
+  SQLite; Gradle passes the schema folder (`SIMCTL_CHILD_ROOM_SCHEMAS_DIR`). Passes.
+
+Feature check against ProPodcastN's README (✅ both platforms, 🤖 Android only so far, ⏳ open):
+
+| Feature | Status |
+|---|---|
+| Best podcasts: paging, genre and region filters, chips that hide on scroll | ✅ |
+| Search with language filter | ✅ |
+| Podcast details: description, recommendations, episodes, artwork transition | ✅ |
+| Share podcast or episode | ✅ |
+| Favorites: podcasts, episodes, downloaded; heart or swipe with Undo | ✅ |
+| Downloads: progress, cancel, retry, marks in lists, Wi-Fi only, mobile data prompt | ✅ (progress: notification on Android, Live Activity on iOS) |
+| Player switches to the downloaded file; works offline | ✅ |
+| Offline / back online strip, "Go to downloads", cached genres and regions | ✅ (offline strip seen on Android; the simulator shares the Mac's network) |
+| Background playback, media notification / lock screen, headset and Bluetooth controls | ✅; iOS Now Playing gets title, podcast and artwork (seen in the system log), the simulator's lock screen does not draw it: check on a device ⏳ |
+| Mini player, full player (drag to close, landscape layout), seek, −15/+30, speed, download | ✅ |
+| Continue listening after restart | ✅ |
+| Home screen widget with play / pause | ✅ |
+| Settings: theme with animated change, Wi-Fi only | ✅ |
+| Adaptive layout: bar / rail, grids, two-pane details, landscape player | ✅ Android phone and tablet; iPad ⏳ |
+| Material You | 🤖 (iOS uses the app palette) |
+| Quota banner | ✅ |
+| Firebase Crashlytics and Analytics | ✅ start; a real crash report ⏳ |
+| Debug builds on the mock server | ✅ |
+| Release build: R8 shrinking and signing from `keystore.properties` | ⏳ not ported (`androidApp` release has no R8 or signing); iOS release not built |
+
 **7. Platform services.** Interfaces in `commonMain`, implementations in `platformModule` per platform; the stubs
 are gone. Share moved in 6.1.
 
@@ -144,11 +175,17 @@ are gone. Share moved in 6.1.
   iOS: `IosPlayerController` on AVPlayer with the playback audio session (spoken audio), `UIBackgroundModes`
   audio, MPRemoteCommandCenter (play/pause, −15/+30, scrubbing) and MPNowPlayingInfoCenter (no artwork yet);
   it saves the last episode and position and switches to a finished download like the Android player.
+  The artwork for Now Playing is downloaded once per episode (`MPMediaItemArtwork`).
 - Downloads: WorkManager worker, file store, notifications and repository ported to `androidMain`; the worker
   gets its dependencies from Koin (`KoinComponent`), so no custom WorkManager factory is needed. iOS:
   `IosDownloadsRepository` on a background `NSURLSession` (downloads go on while the app is suspended; the
   app delegate passes `handleEventsForBackgroundURLSession` to it; created at Koin start). Wi-Fi only: the
-  request disallows cellular and expensive networks. No progress notification on iOS.
+  request disallows cellular and expensive networks. iOS has no ongoing progress notifications; the equivalent is a
+  Live Activity (`DownloadActivityAttributes`, drawn by the widget extension on the lock screen and in the Dynamic
+  Island, with a Cancel button: `CancelDownloadIntent`, a LiveActivityIntent run in the app's process).
+  `DownloadProgressPresenter` (Swift: `LiveActivityDownloadPresenter`) gets the running downloads from
+  `IosDownloadsRepository`; the activity starts when Download is tapped (iOS allows it only in the foreground),
+  updates at most once a second and ends when the download finishes or is cancelled.
 - Storage: episodes are persistent on both platforms, never in caches or tmp: Android `filesDir/episodes`
   (excluded from Auto Backup / device transfer: it would exceed the 25 MB quota), iOS
   `Application Support/episodes` (not purged by the system, excluded from iCloud backup).

@@ -24,7 +24,8 @@ struct iOSApp: App {
         KoinIosKt.doInitKoinIos(
             analytics: firebase ? FirebaseAnalyticsTracker() : nil,
             crashlytics: firebase ? FirebaseCrashlyticsBridge() : nil,
-            widgetReloader: WidgetCenterReloader()
+            widgetReloader: WidgetCenterReloader(),
+            downloadProgress: LiveActivityDownloadPresenter()
         )
     }
 

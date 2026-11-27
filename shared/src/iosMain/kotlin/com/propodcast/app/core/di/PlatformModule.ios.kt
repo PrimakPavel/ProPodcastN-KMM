@@ -18,7 +18,7 @@ actual val platformModule: Module = module {
     single<ConnectivityMonitor> { IosConnectivityMonitor() }
     // Created at start: the background URLSession must exist when iOS relaunches the app to deliver downloads.
     single<DownloadsRepository>(createdAtStart = true) {
-        IosDownloadsRepository(dao = get(), analytics = get(), preferences = get())
+        IosDownloadsRepository(dao = get(), analytics = get(), preferences = get(), progressPresenter = getOrNull())
     }
     single<PlayerController> { IosPlayerController(preferences = get(), downloads = get(), analytics = get()) }
     single { buildDatabase(databaseBuilder()) }

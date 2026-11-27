@@ -7,6 +7,7 @@ import WidgetKit
 struct PlayerWidgetBundle: WidgetBundle {
     var body: some Widget {
         PlayerWidget()
+        DownloadActivityWidget()
     }
 }
 
