@@ -16,6 +16,3 @@ fun initKoin(config: KoinAppDeclaration = {}): KoinApplication = startKoin {
     config()
     modules(appModules())
 }
-
-/** iOS entry point: Swift calls `KoinKt.doInitKoinIos()` (Kotlin default arguments are not visible from Swift). */
-fun initKoinIos(): KoinApplication = initKoin()

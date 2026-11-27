@@ -20,7 +20,11 @@ struct iOSApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     init() {
-        KoinKt.doInitKoinIos()
+        let firebase = FirebaseSetup.configureIfPresent()
+        KoinIosKt.doInitKoinIos(
+            analytics: firebase ? FirebaseAnalyticsTracker() : nil,
+            crashlytics: firebase ? FirebaseCrashlyticsBridge() : nil
+        )
     }
 
     var body: some Scene {

@@ -83,6 +83,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.guava)
             implementation(libs.androidx.work.runtime)
             implementation(libs.okhttp)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.analytics)
+            implementation(libs.firebase.crashlytics)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

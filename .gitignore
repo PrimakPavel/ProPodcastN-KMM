@@ -6,6 +6,9 @@ build/
 /local.properties
 /gradle/gradle-daemon-jvm.properties
 /keystore.properties
+# Firebase configs (per developer, not in git)
+/androidApp/google-services.json
+/iosApp/iosApp/GoogleService-Info.plist
 /keystore/
 *.jks
 *.keystore

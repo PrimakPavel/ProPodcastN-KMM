@@ -7,6 +7,9 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<!-- Launch screen like Android 12+'s splash (see LaunchScreen.storyboard). -->
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
 	<!-- Required by Compose Multiplatform: lets it render at 120 Hz on ProMotion screens. -->
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>

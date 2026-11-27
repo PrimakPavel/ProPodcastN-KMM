@@ -22,5 +22,9 @@ Requirements: JDK 17, Android SDK with platform 37, Xcode 27.
 iOS: open `iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` scheme. The build phase calls
 `./gradlew :shared:embedAndSignAppleFrameworkForXcode` to compile the shared framework.
 
+Firebase (optional, not in git): put `google-services.json` into `androidApp/` and `GoogleService-Info.plist` into
+`iosApp/iosApp/` (Firebase project with the apps `com.propodcast.app.kmm`, `com.propodcast.app.kmm.debug` and the
+iOS app `com.propodcast.app.kmm`). Without them the app runs without Analytics and Crashlytics.
+
 The Android application id is `com.propodcast.app` plus `propodcast.applicationIdSuffix` from
 `gradle.properties` (`.kmm` by default), so it installs next to the original app.

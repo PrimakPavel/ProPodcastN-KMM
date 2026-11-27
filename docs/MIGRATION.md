@@ -17,8 +17,8 @@ Status: ✅ done · 🔄 in progress · ⏳ not started
 | 4 | DI: Hilt → Koin | ✅ | `cd7e77e` |
 | 5 | Design system and resources: theme, colors, typography, `strings.xml` → Compose Resources | ✅ | `52e3242` |
 | 6 | UI: navigation, screens, shared widgets, adaptive layout (3 parts, see notes) | ✅ | `b8bf2ff`, `ca3a743`, `092b1bf`, `dde3311` |
-| 7 | Platform services: player, downloads (incl. `DownloadsRepository`), connectivity, share | ✅ | |
-| 8 | Logging and monitoring: Timber → Kermit, Firebase Crashlytics and Analytics | ⏳ | |
+| 7 | Platform services: player, downloads (incl. `DownloadsRepository`), connectivity, share | ✅ | `dfb01bf` |
+| 8 | Logging and monitoring: Timber → Kermit, Firebase Crashlytics and Analytics | ✅ | |
 | 9 | Home screen widget: Glance (Android), WidgetKit (iOS) | ⏳ | |
 | 10 | UI tests and a full feature check against ProPodcastN | ⏳ | |
 
@@ -48,7 +48,7 @@ the start screen shows a temporary storage check.
 **4. DI.** Koin 4.2 (chosen over Metro). Modules in `core/di`: `networkModule` (config, HTTP client, API, quota),
 `dataModule` (DAOs, cache, repositories, `Clock`, analytics), and `platformModule` per platform (database and the
 two DataStores, told apart by `DataStoreQualifiers`). Started in `ProPodcastApplication` on Android
-(`androidContext`) and in the SwiftUI app's `init` on iOS (`KoinKt.doInitKoinIos()`). Composables get
+(`androidContext`) and in the SwiftUI app's `init` on iOS (`KoinIosKt.doInitKoinIos(analytics:crashlytics:)`). Composables get
 dependencies with `koinInject()`; ViewModels (`koin-compose-viewmodel`) come with the UI stage.
 `KoinModulesTest` resolves the whole graph with in-memory storage on both platforms.
 Player, downloads and connectivity modules come with stage 7, Firebase analytics with stage 8.
@@ -63,7 +63,11 @@ Compose Resources only formats indexed arguments, so `%d` became `%1$d` and `%%`
 The app's vector icons are in `composeResources/drawable`; vectors must use literal colors
 (`@android:color/white` crashed the parser). Material icons stay on `material-icons-core` 1.7.3 from JetBrains
 (no longer updated, but has iOS builds); replacing them with vectors can come later.
-The Android launcher icon and window theme are in `androidApp`. The iOS app icon is still the empty placeholder.
+The Android launcher icon and window theme are in `androidApp`. iOS got the same icon (rendered from the Android
+vectors: 1024 px, opaque) and a `LaunchScreen.storyboard` like Android 12+'s splash: the icon in a circle on
+`LaunchBackground` (the theme background, light `#FEF7FF` / dark `#141218`, so the first Compose frame does not
+flash). The Info.plist `UILaunchScreen` dictionary was tried first; the storyboard is the usual way and handles the
+transparent icon in both modes. The simulator caches launch screens until it reboots.
 Dates: kotlinx-datetime has no locale-aware formatting, so the quota banner date ("Resets on Dec 25, 2026")
 needs a custom format or per-platform formatting (UI stage).
 
@@ -96,11 +100,28 @@ so a Ukrainian device showed "161 episode" (Ukrainian "one" covers 21, 31, 161�
 same bug). No library fixes it; `englishPluralStringResource` applies English rules (1 → one, else other) to the
 same `<plurals>`. Use it instead of `pluralStringResource` until the strings are translated.
 
+**8. Logging and monitoring.** Kermit everywhere (`setUpLogging`): debug builds log to Logcat / the Xcode console,
+release builds log nothing locally; with Firebase, warnings and errors go to Crashlytics through
+`CrashReporterLogWriter` (as `CrashlyticsTree` did with Timber), errors with a throwable as non-fatal issues.
+Firebase project `propodcast-34ca9`, apps `com.propodcast.app.kmm(.debug)` (Android) and `com.propodcast.app.kmm`
+(iOS). Configs are per developer and not in git: `androidApp/google-services.json`,
+`iosApp/iosApp/GoogleService-Info.plist`; without them the app runs without Firebase, as ProPodcastN does.
+- Android: Firebase BOM 35.2 (Analytics, Crashlytics) in `androidMain`; the Google Services and Crashlytics plugins
+  apply to `androidApp` only when `google-services.json` exists. `AnalyticsTracker` is Firebase or no-op.
+- iOS: Firebase iOS SDK 13.2 through Swift Package Manager (FirebaseAnalytics, FirebaseCrashlytics, `-ObjC`), started
+  in Swift when the plist is in the bundle. Swift bridges implement `AnalyticsTracker` and `IosCrashlyticsBridge`
+  and are passed to `initKoinIos`. An unhandled-exception hook records uncaught Kotlin exceptions with their Kotlin
+  stack before the app terminates. An "Upload Crashlytics Symbols" build phase uploads dSYMs when the plist exists.
+- Checked: Firebase starts on both platforms; Android sends `screen_view` with route names.
+  Not checked yet: a real crash / non-fatal report reaching the Crashlytics console, iOS analytics events in
+  DebugView, dSYM upload of a release build.
+
 **7. Platform services.** Interfaces in `commonMain`, implementations in `platformModule` per platform; the stubs
 are gone. Share moved in 6.1.
 
 - Connectivity: `AndroidConnectivityMonitor` (ported) and `IosConnectivityMonitor` on `NWPathMonitor`
-  (cellular and Low Data Mode count as metered).
+  (cellular and Low Data Mode count as metered). The iOS monitor emits nothing until `NWPathMonitor`'s first
+  update: starting from NONE showed "No connection" and then "Back online" at every app start.
 - Player: Media3 `MediaPlayerController` + `PlaybackService` ported to `androidMain` (Kermit instead of Timber;
   the notification's −15/+30 labels come from Compose Resources; the session opens the app's launch intent).
   iOS: `IosPlayerController` on AVPlayer with the playback audio session (spoken audio), `UIBackgroundModes`

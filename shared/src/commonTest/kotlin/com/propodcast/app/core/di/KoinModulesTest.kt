@@ -1,6 +1,7 @@
 package com.propodcast.app.core.di
 
 import com.propodcast.app.core.analytics.AnalyticsTracker
+import com.propodcast.app.core.analytics.NoOpAnalyticsTracker
 import com.propodcast.app.core.data.cache.ReferenceDataCache
 import com.propodcast.app.core.data.createPreferencesDataStore
 import com.propodcast.app.core.data.repository.ApiQuotaRepository
@@ -32,6 +33,7 @@ class KoinModulesTest : DatabaseTest() {
 
     /** In-memory database and temp DataStores instead of the platform files. */
     private val testPlatformModule = module {
+        single<AnalyticsTracker> { NoOpAnalyticsTracker }
         single { inMemoryTestDatabase() }
         single(DataStoreQualifiers.UserPreferences) { createPreferencesDataStore((tmp.root / "prefs.preferences_pb").toString()) }
         single(DataStoreQualifiers.ReferenceCache) { createPreferencesDataStore((tmp.root / "cache.preferences_pb").toString()) }

@@ -2,6 +2,11 @@ package com.propodcast.app.core.di
 
 import com.propodcast.app.core.connectivity.AndroidConnectivityMonitor
 import androidx.work.WorkManager
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.propodcast.app.core.analytics.AnalyticsTracker
+import com.propodcast.app.core.analytics.FirebaseAnalyticsTracker
+import com.propodcast.app.core.analytics.NoOpAnalyticsTracker
+import com.propodcast.app.core.crash.isFirebaseConfigured
 import com.propodcast.app.core.connectivity.ConnectivityMonitor
 import com.propodcast.app.core.data.repository.DownloadsRepository
 import com.propodcast.app.core.download.DownloadNotifications
@@ -22,6 +27,14 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 actual val platformModule: Module = module {
+    // Firebase only when the build had google-services.json (FirebaseApp was initialised).
+    single<AnalyticsTracker> {
+        if (isFirebaseConfigured(androidContext())) {
+            FirebaseAnalyticsTracker(FirebaseAnalytics.getInstance(androidContext()))
+        } else {
+            NoOpAnalyticsTracker
+        }
+    }
     single<ConnectivityMonitor> { AndroidConnectivityMonitor(androidContext()) }
     single { WorkManager.getInstance(androidContext()) }
     single { EpisodeFileStore(androidContext()) }
