@@ -1,0 +1,17 @@
+*.iml
+.gradle/
+.kotlin/
+.idea/
+build/
+/local.properties
+/keystore.properties
+/keystore/
+*.jks
+*.keystore
+.DS_Store
+captures/
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+iosApp/iosApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
