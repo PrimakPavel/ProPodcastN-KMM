@@ -18,6 +18,7 @@ kotlin {
         // TopAppBar and friends are stable in androidx Material 3 1.5 (ProPodcastN), still experimental in
         // JetBrains Material 3 1.9.
         optIn.add("androidx.compose.material3.ExperimentalMaterial3Api")
+        optIn.add("androidx.compose.ui.test.ExperimentalTestApi")
     }
 
     android {
@@ -99,6 +100,12 @@ kotlin {
             implementation(libs.androidx.paging.testing)
             implementation(libs.turbine)
             implementation(libs.koin.test)
+            implementation(libs.compose.ui.test)
+        }
+        iosTest.dependencies {
+            implementation(libs.androidx.room.testing)
+            // room-testing reads schemas with an older json-okio; align it with kotlinx.serialization 1.13.
+            implementation(libs.kotlinx.serialization.json.okio)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.junit)
@@ -106,6 +113,8 @@ kotlin {
             implementation(libs.androidx.test.core)
             implementation(libs.androidx.work.testing)
             implementation(libs.androidx.glance.appwidget.testing)
+            implementation(libs.androidx.compose.ui.test.junit4)
+            implementation(libs.androidx.compose.ui.test.manifest)
         }
     }
 }
@@ -117,6 +126,11 @@ dependencies {
 
 room {
     schemaDirectory("$projectDir/schemas")
+}
+
+// The iOS migration test reads the exported schemas from disk; simctl passes SIMCTL_CHILD_* variables to the test.
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest>().configureEach {
+    environment("SIMCTL_CHILD_ROOM_SCHEMAS_DIR", "$projectDir/schemas")
 }
 
 compose.resources {

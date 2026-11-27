@@ -13,3 +13,5 @@ actual fun inMemoryTestDatabase(): ProPodcastDatabase =
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
         .build()
+
+actual abstract class UiTestBase actual constructor()

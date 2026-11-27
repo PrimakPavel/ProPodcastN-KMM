@@ -10,3 +10,9 @@ expect abstract class DatabaseTest()
 
 /** A fresh in-memory database. Call from a [DatabaseTest]. */
 expect fun inMemoryTestDatabase(): ProPodcastDatabase
+
+/**
+ * Base for Compose UI tests (`runComposeUiTest`). On the Android host they need Robolectric (an Activity to host
+ * the content); on iOS they run as they are.
+ */
+expect abstract class UiTestBase()

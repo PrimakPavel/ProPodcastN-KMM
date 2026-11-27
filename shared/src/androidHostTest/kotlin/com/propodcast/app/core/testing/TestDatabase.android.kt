@@ -21,3 +21,7 @@ actual fun inMemoryTestDatabase(): ProPodcastDatabase =
         .setQueryCoroutineContext(Dispatchers.IO)
         .allowMainThreadQueries()
         .build()
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+actual abstract class UiTestBase actual constructor()
