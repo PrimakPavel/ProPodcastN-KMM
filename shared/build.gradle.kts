@@ -52,9 +52,12 @@ kotlin {
             implementation(libs.androidx.paging.common)
             implementation(libs.okio)
             implementation(libs.kermit)
+            api(libs.koin.core)
+            implementation(libs.koin.compose)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
+            api(libs.koin.android)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -65,6 +68,7 @@ kotlin {
             implementation(libs.ktor.client.mock)
             implementation(libs.androidx.paging.testing)
             implementation(libs.turbine)
+            implementation(libs.koin.test)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.junit)

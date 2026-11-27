@@ -23,27 +23,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import com.propodcast.app.core.data.repository.ApiQuotaRepository
+import com.propodcast.app.core.data.repository.FavoritesRepository
+import com.propodcast.app.core.data.repository.PodcastRepository
+import com.propodcast.app.core.di.DataStoreQualifiers
+import org.koin.compose.koinInject
 import androidx.datastore.preferences.core.intPreferencesKey
-import com.propodcast.app.core.analytics.NoOpAnalyticsTracker
 import com.propodcast.app.core.common.apiCall
-import com.propodcast.app.core.data.AppStorage
-import com.propodcast.app.core.data.cache.DataStoreReferenceDataCache
-import com.propodcast.app.core.data.repository.DefaultFavoritesRepository
-import com.propodcast.app.core.data.repository.DefaultPodcastRepository
 import com.propodcast.app.core.network.dto.toModel
-import com.propodcast.app.core.network.listenNotesJson
 import kotlinx.coroutines.flow.first
-import com.propodcast.app.core.network.ApiConfig
 import com.propodcast.app.core.network.ListenNotesApi
-import com.propodcast.app.core.network.createListenNotesHttpClient
 import com.propodcast.app.resources.Res
 import com.propodcast.app.resources.app_name
 import com.propodcast.app.resources.greeting
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun App(storage: AppStorage) {
+fun App() {
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
         Surface(Modifier.fillMaxSize()) {
             Column(
@@ -54,37 +53,29 @@ fun App(storage: AppStorage) {
                 Text(stringResource(Res.string.app_name), style = MaterialTheme.typography.headlineMedium)
                 Text(stringResource(Res.string.greeting, platformName()), style = MaterialTheme.typography.bodyLarge)
                 Spacer(Modifier.height(24.dp))
-                StorageCheck(storage)
+                StorageCheck()
             }
         }
     }
 }
 
 /**
- * Temporary check of the network and data stages: counts launches in DataStore, loads best podcasts
+ * Temporary check of the network, data and DI stages (everything comes from Koin): counts launches in DataStore, loads best podcasts
  * through the repository (genres via the on-disk cache) and adds the next one to favorites in Room.
  * Both numbers grow across restarts when storage works.
  */
 @Composable
-private fun StorageCheck(storage: AppStorage) {
+private fun StorageCheck() {
+    val userPreferences: DataStore<Preferences> = koinInject(DataStoreQualifiers.UserPreferences)
+    val api: ListenNotesApi = koinInject()
+    val podcasts: PodcastRepository = koinInject()
+    val favorites: FavoritesRepository = koinInject()
+    val quota: ApiQuotaRepository = koinInject()
     var text by remember { mutableStateOf("Loading…") }
     LaunchedEffect(Unit) {
-        val launches = storage.userPreferences.edit { prefs ->
+        val launches = userPreferences.edit { prefs ->
             prefs[LAUNCHES] = (prefs[LAUNCHES] ?: 0) + 1
         }[LAUNCHES]
-        val config = ApiConfig.fromBuildKonfig()
-        val client = createListenNotesHttpClient(config, logging = BuildKonfig.HTTP_LOGGING)
-        val api = ListenNotesApi(client)
-        val podcasts = DefaultPodcastRepository(
-            api = api,
-            cache = DataStoreReferenceDataCache(storage.referenceCache, listenNotesJson, config),
-            analytics = NoOpAnalyticsTracker,
-        )
-        val favorites = DefaultFavoritesRepository(
-            podcastDao = storage.database.favoritePodcastDao(),
-            episodeDao = storage.database.favoriteEpisodeDao(),
-            analytics = NoOpAnalyticsTracker,
-        )
         val genres = podcasts.genres().fold({ "${it.size} genres" }, { "genres: ${it.message}" })
         text = apiCall { api.bestPodcasts() }.fold(
             onSuccess = { response ->
@@ -92,12 +83,12 @@ private fun StorageCheck(storage: AppStorage) {
                 response.podcasts.map { it.toModel() }.firstOrNull { it.id !in stored }
                     ?.let { favorites.setPodcastFavorite(it, favorite = true) }
                 val favoriteTitles = favorites.favoritePodcasts.first().map { it.title }
-                "Launch #$launches (DataStore), $genres (cache)\n\n" +
+                val used = quota.quota.value?.let { "API quota: ${it.used} of ${it.freeQuota}" } ?: "API quota: unknown"
+                "Launch #$launches (DataStore), $genres (cache)\n$used\n\n" +
                     "Favorites in Room (${favoriteTitles.size}):\n" + favoriteTitles.take(5).joinToString("\n")
             },
             onFailure = { "Error: ${it.message}" },
         )
-        client.close()
     }
     Text(text, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
 }

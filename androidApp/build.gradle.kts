@@ -20,7 +20,10 @@ android {
         debug { applicationIdSuffix = ".debug" }
         release { isMinifyEnabled = false }
     }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 }
 
 dependencies {

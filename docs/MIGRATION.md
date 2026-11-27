@@ -13,8 +13,8 @@ Status: ✅ done · 🔄 in progress · ⏳ not started
 | 0 | Empty KMP project: `shared` (Compose Multiplatform), `androidApp`, `iosApp` | ✅ | `4c2f39c`, `4617704`, `8094071` |
 | 1 | `core/model` → `commonMain` | ✅ | `d22f381` |
 | 2 | Network: Retrofit/OkHttp → Ktor, DTOs, `AppError`, API config (BuildKonfig) | ✅ | `5e6221b` |
-| 3 | Data: Room KMP, DataStore, repositories, Paging | ✅ | |
-| 4 | DI: Hilt → Koin or Metro | ⏳ | |
+| 3 | Data: Room KMP, DataStore, repositories, Paging | ✅ | `7f30c01` |
+| 4 | DI: Hilt → Koin | ✅ | |
 | 5 | Design system and resources: theme, colors, typography, `strings.xml` → Compose Resources | ⏳ | |
 | 6 | UI: navigation, screens, shared widgets, adaptive layout | ⏳ | |
 | 7 | Platform services: player, downloads (incl. `DownloadsRepository`), connectivity, share | ⏳ | |
@@ -45,9 +45,13 @@ Tests: Room tests extend `DatabaseTest`, which runs them under Robolectric on th
 and as plain tests on iOS (bundled SQLite). `AppStorage` holds the database and DataStores until DI (stage 4);
 the start screen shows a temporary storage check.
 
-**4. DI.** Hilt is Android-only. Choice to make: Koin (simple, runtime) or Metro (compile-time, closest to Hilt).
-Replaces `AppStorage`, the hand-made clients in `App.kt` and the old `NetworkModule` / `DatabaseModule` /
-`DataStoreModule`.
+**4. DI.** Koin 4.2 (chosen over Metro). Modules in `core/di`: `networkModule` (config, HTTP client, API, quota),
+`dataModule` (DAOs, cache, repositories, `Clock`, analytics), and `platformModule` per platform (database and the
+two DataStores, told apart by `DataStoreQualifiers`). Started in `ProPodcastApplication` on Android
+(`androidContext`) and in the SwiftUI app's `init` on iOS (`KoinKt.doInitKoinIos()`). Composables get
+dependencies with `koinInject()`; ViewModels (`koin-compose-viewmodel`) come with the UI stage.
+`KoinModulesTest` resolves the whole graph with in-memory storage on both platforms.
+Player, downloads and connectivity modules come with stage 7, Firebase analytics with stage 8.
 
 **5. Resources.** Dates: kotlinx-datetime has no locale-aware formatting, so the quota banner date
 ("Resets on Dec 25, 2026") needs a custom format or per-platform formatting.
@@ -72,7 +76,7 @@ Replaces `AppStorage`, the hand-made clients in `App.kt` and the old `NetworkMod
 | Material 3 Adaptive Navigation Suite | `org.jetbrains.compose.material3.adaptive` |
 | Material Icons Core | vector drawables in `composeResources` |
 | `strings.xml` | Compose Resources (`Res.string.*`) |
-| Hilt, Hilt Navigation, Hilt Work | Koin or Metro |
+| Hilt, Hilt Navigation, Hilt Work | Koin |
 | Retrofit + converter | Ktor Client + ContentNegotiation |
 | OkHttp interceptors | Ktor plugins |
 | kotlinx.serialization | same |
