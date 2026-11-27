@@ -1,6 +1,9 @@
 package com.propodcast.app
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -14,11 +17,13 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.window.core.layout.WindowSizeClass
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -32,12 +37,17 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.propodcast.app.core.model.toNowPlaying
-import com.propodcast.app.core.player.PlayerController
+import com.propodcast.app.core.model.toEpisode
 import com.propodcast.app.core.ui.LocalSharedTransitionScope
-import org.koin.compose.koinInject
+import com.propodcast.app.core.ui.SnackbarEffect
 import com.propodcast.app.feature.downloads.DownloadsViewModel
 import com.propodcast.app.feature.downloads.CellularDownloadPrompt
+import com.propodcast.app.feature.downloads.rememberEpisodeDownloadActions
+import com.propodcast.app.feature.network.NetworkBannerViewModel
+import com.propodcast.app.feature.network.NetworkStatusBar
+import com.propodcast.app.feature.player.FullPlayerOverlay
+import com.propodcast.app.feature.player.MiniPlayer
+import com.propodcast.app.feature.player.PlayerViewModel
 import com.propodcast.app.navigation.AppNavHost
 import com.propodcast.app.navigation.TopLevelDestination
 
@@ -46,14 +56,19 @@ import com.propodcast.app.navigation.TopLevelDestination
 fun ProPodcastApp(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    playerViewModel: PlayerViewModel = koinViewModel(),
     downloadsViewModel: DownloadsViewModel = koinViewModel(),
+    networkBannerViewModel: NetworkBannerViewModel = koinViewModel(),
     /** Called with the screen's name (route class) on every navigation, for analytics. */
     onScreenView: (String) -> Unit = {},
 ) {
-    // Mini / full player and the network strip come back in UI part 6.3; until then episodes go straight
-    // to the (stub) player controller.
-    val player: PlayerController = koinInject()
+    val networkBanner by networkBannerViewModel.banner.collectAsStateWithLifecycle()
+    val player by playerViewModel.uiState.collectAsStateWithLifecycle()
+    val downloads = rememberEpisodeDownloadActions(downloadsViewModel)
+    val playerSnackbar = remember { SnackbarHostState() }
+    SnackbarEffect(downloadsViewModel.snackbarEvents, playerSnackbar)
     CellularDownloadPrompt(downloadsViewModel)
+    var showFullPlayer by rememberSaveable { mutableStateOf(false) }
     val backStackEntry by navController.currentBackStackEntryAsState()
     // Keeps the tab highlighted while a nested screen (e.g. podcast details) is open.
     var selectedTab by rememberSaveable { mutableStateOf(TopLevelDestination.HOME) }
@@ -91,13 +106,39 @@ fun ProPodcastApp(
             CompositionLocalProvider(LocalSharedTransitionScope provides this@SharedTransitionLayout) {
                 AppNavHost(
                     navController = navController,
-                    onPlayEpisode = { episode -> episode.toNowPlaying()?.let { player.play(it); true } ?: false },
+                    onPlayEpisode = playerViewModel::play,
                     modifier = Modifier.weight(1f),
                 )
             }
+            AnimatedVisibility(visible = player.isVisible, enter = expandVertically(), exit = shrinkVertically()) {
+                MiniPlayer(
+                    state = player,
+                    onOpen = { showFullPlayer = true },
+                    onTogglePlayPause = playerViewModel::togglePlayPause,
+                    onClose = playerViewModel::stop,
+                    expanded = showFullPlayer,
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                )
+            }
+            NetworkStatusBar(networkBanner)
         }
     }
 
+    val playingEpisode = player.playback.nowPlaying?.toEpisode()
+    FullPlayerOverlay(
+        visible = showFullPlayer && player.isVisible,
+        state = player,
+        sharedTransitionScope = this@SharedTransitionLayout,
+        onCollapse = { showFullPlayer = false },
+        onTogglePlayPause = playerViewModel::togglePlayPause,
+        onSeekTo = playerViewModel::seekTo,
+        onSeekBack = playerViewModel::seekBack,
+        onSeekForward = playerViewModel::seekForward,
+        onSpeedSelected = playerViewModel::setSpeed,
+        downloadState = playingEpisode?.let { downloads.stateOf(it) },
+        onDownloadClick = playingEpisode?.let { episode -> { downloads.onPrimaryAction(episode) } },
+        snackbarHostState = playerSnackbar,
+    )
     }
 }
 

@@ -2,9 +2,13 @@ package com.propodcast.app.core.di
 
 import com.propodcast.app.feature.details.PodcastDetailsViewModel
 import com.propodcast.app.feature.downloads.DownloadsViewModel
+import com.propodcast.app.feature.favorites.FavoritesViewModel
 import com.propodcast.app.feature.filters.FiltersViewModel
 import com.propodcast.app.feature.home.HomeViewModel
+import com.propodcast.app.feature.network.NetworkBannerViewModel
+import com.propodcast.app.feature.player.PlayerViewModel
 import com.propodcast.app.feature.search.SearchViewModel
+import com.propodcast.app.feature.settings.SettingsViewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
@@ -15,4 +19,8 @@ val featureModule = module {
     viewModelOf(::SearchViewModel)
     viewModelOf(::PodcastDetailsViewModel)
     viewModelOf(::DownloadsViewModel)
+    viewModelOf(::FavoritesViewModel)
+    viewModelOf(::SettingsViewModel)
+    viewModelOf(::NetworkBannerViewModel)
+    viewModelOf(::PlayerViewModel)
 }

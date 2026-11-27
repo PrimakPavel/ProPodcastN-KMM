@@ -16,7 +16,7 @@ Status: ✅ done · 🔄 in progress · ⏳ not started
 | 3 | Data: Room KMP, DataStore, repositories, Paging | ✅ | `7f30c01` |
 | 4 | DI: Hilt → Koin | ✅ | `cd7e77e` |
 | 5 | Design system and resources: theme, colors, typography, `strings.xml` → Compose Resources | ✅ | `52e3242` |
-| 6 | UI: navigation, screens, shared widgets, adaptive layout (3 parts, see notes) | 🔄 | |
+| 6 | UI: navigation, screens, shared widgets, adaptive layout (3 parts, see notes) | ✅ | `b8bf2ff`, `ca3a743`, `092b1bf` |
 | 7 | Platform services: player, downloads (incl. `DownloadsRepository`), connectivity, share | ⏳ | |
 | 8 | Logging and monitoring: Timber → Kermit, Firebase Crashlytics and Analytics | ⏳ | |
 | 9 | Home screen widget: Glance (Android), WidgetKit (iOS) | ⏳ | |
@@ -76,7 +76,7 @@ needs a custom format or per-platform formatting (UI stage).
   `fromHtml` is Android-only). Images: Coil 3 with the Ktor network fetcher. `SnackbarEvent` takes
   `StringResource`s. `PlayerController`, `ConnectivityMonitor` and `DownloadsRepository` (now `localFilePath`)
   moved as interfaces with stub implementations in `platformServicesModule` until stage 7.
-- 6.2 ✅ Navigation (JetBrains `navigation-compose`, type-safe routes as before), the app shell
+- 6.2 ✅ (`092b1bf`) Navigation (JetBrains `navigation-compose`, type-safe routes as before), the app shell
   (`NavigationSuiteScaffold`: bottom bar on phones, rail on tablets and in phone landscape, from JetBrains
   Material 3 adaptive), Home, Filters, Search, Details and the download actions (`feature/downloads`, on the stub
   repository). ViewModels come from Koin (`featureModule`, `koinViewModel()`; `SavedStateHandle` from the
@@ -84,7 +84,12 @@ needs a custom format or per-platform formatting (UI stage).
   `ExperimentalMaterial3Api`. Favorites and Settings tabs show a placeholder until 6.3; episodes go to the stub
   player. The iOS edge swipe goes back (Compose's `UIScreenEdgePanGestureRecognizer`).
   The temporary check screen and `platformName()` are gone: the app opens on Best podcasts.
-- 6.3 ⏳ Favorites, Downloads, Settings, network banner, mini and full player.
+- 6.3 ✅ Favorites (with the Downloaded tab), Settings, the network strip, mini and full player; the shell is
+  now the same as in ProPodcastN. Platform pieces: the full player's back handling uses Compose's
+  `ui-backhandler` (Android back, iOS edge swipe); the seek bar uses the value-based `Slider` (JetBrains
+  Material 3 1.9 has no state-based overload with `onValueChange`). Until stage 7 the player is a stub (no
+  sound, position moves only on seek), the Downloaded tab stays empty and the network strip never shows.
+  Compose UI tests (`androidTest` in ProPodcastN) are not moved yet: stage 10.
 
 Plurals: Compose Resources picks plural rules by the device language even when only English strings exist,
 so a Ukrainian device showed "161 episode" (Ukrainian "one" covers 21, 31, 161…; ProPodcastN on Android has the

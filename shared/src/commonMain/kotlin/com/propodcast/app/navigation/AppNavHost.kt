@@ -14,9 +14,11 @@ import com.propodcast.app.core.ui.LocalArtworkOrigin
 import com.propodcast.app.core.ui.LocalNavAnimatedVisibilityScope
 import com.propodcast.app.feature.details.DetailsPreview
 import com.propodcast.app.feature.details.PodcastDetailsScreen
+import com.propodcast.app.feature.favorites.FavoritesScreen
 import com.propodcast.app.feature.favorites.FavoritesTab
 import com.propodcast.app.feature.home.HomeScreen
 import com.propodcast.app.feature.search.SearchScreen
+import com.propodcast.app.feature.settings.SettingsScreen
 
 @Composable
 fun AppNavHost(
@@ -45,8 +47,17 @@ fun AppNavHost(
                 )
             }
         }
-        composable<FavoritesRoute> {
-            Destination(this, origin = "favorites") { PendingScreen("Favorites") }
+        composable<FavoritesRoute> { entry ->
+            val initialTab = entry.toRoute<FavoritesRoute>().initialTab
+                ?.let { name -> FavoritesTab.entries.firstOrNull { it.name == name } }
+                ?: FavoritesTab.PODCASTS
+            Destination(this, origin = "favorites") {
+                FavoritesScreen(
+                    initialTab = initialTab,
+                    onPodcastClick = { navController.navigate(it.detailsRoute("favorites")) },
+                    onPlayEpisode = onPlayEpisode,
+                )
+            }
         }
         composable<SearchRoute> {
             Destination(this, origin = "search") {
@@ -54,7 +65,9 @@ fun AppNavHost(
             }
         }
         composable<SettingsRoute> {
-            Destination(this, origin = "settings") { PendingScreen("Settings") }
+            Destination(this, origin = "settings") {
+                SettingsScreen(onBack = navController::navigateUp)
+            }
         }
         composable<PodcastDetailsRoute> { entry ->
             val route = entry.toRoute<PodcastDetailsRoute>()
