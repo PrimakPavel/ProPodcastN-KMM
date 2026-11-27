@@ -7,6 +7,7 @@ import com.propodcast.app.core.analytics.AnalyticsTracker
 import com.propodcast.app.core.analytics.FirebaseAnalyticsTracker
 import com.propodcast.app.core.analytics.NoOpAnalyticsTracker
 import com.propodcast.app.core.crash.isFirebaseConfigured
+import com.propodcast.app.widget.PlayerWidgetUpdater
 import com.propodcast.app.core.connectivity.ConnectivityMonitor
 import com.propodcast.app.core.data.repository.DownloadsRepository
 import com.propodcast.app.core.download.DownloadNotifications
@@ -52,6 +53,7 @@ actual val platformModule: Module = module {
             preferences = get(),
         )
     }
+    single { PlayerWidgetUpdater(androidContext(), controller = get(), preferences = get()) }
     single<PlayerController> {
         MediaPlayerController(androidContext(), preferences = get(), downloads = get(), analytics = get())
     }

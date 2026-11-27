@@ -18,8 +18,8 @@ Status: ✅ done · 🔄 in progress · ⏳ not started
 | 5 | Design system and resources: theme, colors, typography, `strings.xml` → Compose Resources | ✅ | `52e3242` |
 | 6 | UI: navigation, screens, shared widgets, adaptive layout (3 parts, see notes) | ✅ | `b8bf2ff`, `ca3a743`, `092b1bf`, `dde3311` |
 | 7 | Platform services: player, downloads (incl. `DownloadsRepository`), connectivity, share | ✅ | `dfb01bf` |
-| 8 | Logging and monitoring: Timber → Kermit, Firebase Crashlytics and Analytics | ✅ | |
-| 9 | Home screen widget: Glance (Android), WidgetKit (iOS) | ⏳ | |
+| 8 | Logging and monitoring: Timber → Kermit, Firebase Crashlytics and Analytics | ✅ | `8d6cc3a` |
+| 9 | Home screen widget: Glance (Android), WidgetKit (iOS) | ✅ | |
 | 10 | UI tests and a full feature check against ProPodcastN | ⏳ | |
 
 ### Stage notes
@@ -119,6 +119,19 @@ Firebase project `propodcast-34ca9`, apps `com.propodcast.app.kmm(.debug)` (Andr
 - Checked: Firebase starts on both platforms; Android sends `screen_view` with route names.
   Not checked yet: a real crash / non-fatal report reaching the Crashlytics console, iOS analytics events in
   DebugView, dSYM upload of a release build.
+
+**9. Home screen widget.** `PlayerWidgetState` (what the widget shows) and `toggleWidgetPlayback` are common.
+- Android: the Glance widget is ported to `androidMain` (Koin instead of the Hilt entry point; Glance draws from
+  Android resources, so its icons are `widget_*` drawables in `shared` and its texts are read from Compose
+  Resources before drawing). `PlayerWidgetUpdater` starts from `ProPodcastApplication`.
+- iOS: a WidgetKit extension (`iosApp/PlayerWidget`, target `PlayerWidget`, small and medium) in SwiftUI. It cannot
+  run the shared code, so `IosPlayerWidgetPublisher` writes a JSON snapshot to the App Group
+  `group.com.propodcast.app.kmm` (plus the artwork file and the texts) and reloads the timeline through
+  `WidgetReloader` (Swift, WidgetCenter). Play / pause is an `AudioPlaybackIntent` in `iosApp/WidgetShared` (in
+  both targets); iOS runs it in the app's process, where it calls the shared player.
+- Checked: both widgets show the last episode with artwork; play / pause on the widget starts and pauses playback
+  and the widget follows. On a device, the App Group needs to be registered for both bundle ids in the Apple
+  developer account (the simulator does not check).
 
 **7. Platform services.** Interfaces in `commonMain`, implementations in `platformModule` per platform; the stubs
 are gone. Share moved in 6.1.

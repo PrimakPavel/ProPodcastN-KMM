@@ -23,7 +23,8 @@ struct iOSApp: App {
         let firebase = FirebaseSetup.configureIfPresent()
         KoinIosKt.doInitKoinIos(
             analytics: firebase ? FirebaseAnalyticsTracker() : nil,
-            crashlytics: firebase ? FirebaseCrashlyticsBridge() : nil
+            crashlytics: firebase ? FirebaseCrashlyticsBridge() : nil,
+            widgetReloader: WidgetCenterReloader()
         )
     }
 

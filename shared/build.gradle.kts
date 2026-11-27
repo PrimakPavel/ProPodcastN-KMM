@@ -86,6 +86,8 @@ kotlin {
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.analytics)
             implementation(libs.firebase.crashlytics)
+            implementation(libs.androidx.glance.appwidget)
+            implementation(libs.androidx.glance.material3)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -103,6 +105,7 @@ kotlin {
             implementation(libs.robolectric)
             implementation(libs.androidx.test.core)
             implementation(libs.androidx.work.testing)
+            implementation(libs.androidx.glance.appwidget.testing)
         }
     }
 }
